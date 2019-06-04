@@ -22,20 +22,16 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import android.content.res.ColorStateList
 import android.content.res.Resources
-import android.text.Layout
 import androidx.annotation.ColorInt
 import androidx.annotation.StringRes
 import androidx.annotation.VisibleForTesting
 import android.text.Spannable
-import android.text.SpannableString
 import android.text.SpannableStringBuilder
-import android.text.style.AlignmentSpan
 import androidx.core.text.toSpannable
 import io.plaidapp.about.R
 import io.plaidapp.about.domain.model.Library
 import io.plaidapp.about.ui.AboutStyler
 import io.plaidapp.core.util.event.Event
-import io.plaidapp.core.util.plusAssign
 import javax.inject.Inject
 import kotlin.LazyThreadSafetyMode.NONE
 
@@ -61,31 +57,25 @@ internal class AboutViewModel @Inject constructor(
                 highlightColor
             )
 
-            val about1 = SpannableString(resources.getString(R.string.about_plaid_1))
-            about1 += AlignmentSpan.Standard(Layout.Alignment.ALIGN_CENTER)
-
-            val about2 = getSpannableFromMarkdown(
-                R.string.about_plaid_2,
+            val about1 = getSpannableFromMarkdown(
+                R.string.about_plaid_1,
                 linksColor,
                 highlightColor
             )
-            about2 += AlignmentSpan.Standard(Layout.Alignment.ALIGN_CENTER)
 
-            val about3 = getSpannableFromMarkdown(
-                R.string.about_plaid_3,
+            val about2 = getSpannableFromMarkdown(
+                R.string.about_plaid_2,
                 linksColor, highlightColor
             )
-            about3 += AlignmentSpan.Standard(Layout.Alignment.ALIGN_CENTER)
-            spannableFrom(about0, "\n\n", about1, "\n", about2, "\n\n", about3)
+            spannableFrom(about0, "\n\n", about1, "\n\n", about2)
         }
     }
 
     private val iconAboutText: CharSequence by lazy(NONE) {
 
-        val icon0 = resources.getString(R.string.about_icon_0)
         with(aboutStyler) {
-            val icon1 = getSpannableFromMarkdown(R.string.about_icon_1, linksColor, highlightColor)
-            spannableFrom(icon0, "\n", icon1)
+            val iconText = getSpannableFromMarkdown(R.string.about_icon, linksColor, highlightColor)
+            spannableFrom(iconText)
         }
     }
 

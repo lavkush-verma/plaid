@@ -20,10 +20,14 @@ import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
-import io.plaidapp.core.R
-import io.plaidapp.core.data.Source
-import io.plaidapp.core.data.Source.DribbbleSearchSource.DRIBBBLE_QUERY_PREFIX
+import io.plaidapp.core.data.SourceItem
+import io.plaidapp.core.dribbble.data.DribbbleSourceItem
+import io.plaidapp.core.dribbble.data.DribbbleSourceItem.Companion.DRIBBBLE_QUERY_PREFIX
+import io.plaidapp.core.producthunt.data.ProductHuntSourceItem
+import io.plaidapp.core.producthunt.data.ProductHuntSourceItem.Companion.SOURCE_PRODUCT_HUNT
 import io.plaidapp.core.ui.filter.FiltersChangedCallback
+import io.plaidapp.test.shared.provideFakeCoroutinesDispatcherProvider
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -34,27 +38,25 @@ import org.junit.Test
 class SourcesRepositoryTest {
 
     private val dnSourceKey = "DESIGNER_NEWS_QUERY_query"
-    private val designerNewsSource = Source.DesignerNewsSearchSource(
-            "query",
-            true
+    private val designerNewsSource = DribbbleSourceItem(
+        "query",
+        true
     )
     private val dribbbleSourceKey = DRIBBBLE_QUERY_PREFIX + "dribbble"
-    private val dribbbleSource = Source.DribbbleSearchSource("dribbble", true)
-    private val phSourceKey = "PH"
-    private val productHuntSource = Source(
-            phSourceKey,
-            500,
-            "product hung",
-            R.drawable.ic_product_hunt,
-            false)
+    private val dribbbleSource = DribbbleSourceItem("dribbble", true)
+    private val productHuntSource = ProductHuntSourceItem("product hunt")
     private val defaultSources = listOf(designerNewsSource, dribbbleSource, productHuntSource)
-    private val defaultSourcesKeys = setOf(dnSourceKey, dribbbleSourceKey, phSourceKey)
+    private val defaultSourcesKeys = setOf(dnSourceKey, dribbbleSourceKey, SOURCE_PRODUCT_HUNT)
 
     private val localDataSource: SourcesLocalDataSource = mock()
-    private val repository = SourcesRepository(defaultSources, localDataSource)
+    private val repository = SourcesRepository(
+        defaultSources,
+        localDataSource,
+        provideFakeCoroutinesDispatcherProvider()
+    )
 
     @Test
-    fun getSources_whenNoOtherSourceWasAdded() {
+    fun getSources_whenNoOtherSourceWasAdded() = runBlocking {
         // Given that no other source was added
         whenever(localDataSource.getKeys()).thenReturn(null)
 
@@ -66,11 +68,11 @@ class SourcesRepositoryTest {
     }
 
     @Test
-    fun getSources_whenOtherSourcesWereAdded() {
+    fun getSources_whenOtherSourcesWereAdded() = runBlocking {
         // Given that other sources were added
         whenever(localDataSource.getKeys()).thenReturn(defaultSourcesKeys)
         whenever(localDataSource.getSourceActiveState(eq(dribbbleSource.key)))
-                .thenReturn(dribbbleSource.active)
+            .thenReturn(dribbbleSource.active)
 
         // When getting the sources
         val sources = repository.getSources()
@@ -84,11 +86,11 @@ class SourcesRepositoryTest {
     }
 
     @Test
-    fun getSources_whenDeprecatedSourcesWereAdded() {
+    fun getSources_whenDeprecatedSourcesWereAdded() = runBlocking {
         // Given that other deprecated sources were added
         val oldSources = mutableSetOf(
-                "SOURCE_DESIGNER_NEWS_RECENT",
-                "SOURCE_DRIBBBLE_query"
+            "SOURCE_DESIGNER_NEWS_RECENT",
+            "SOURCE_DRIBBBLE_query"
         ).toSet()
         whenever(localDataSource.getKeys()).thenReturn(oldSources)
 
@@ -100,36 +102,39 @@ class SourcesRepositoryTest {
     }
 
     @Test
-    fun addSource_addsSourceToDataSource() {
-        // When adding a source
-        repository.addSource(designerNewsSource)
+    fun addSources_addsSourcesToDataSource() {
+        // When adding a list of sources
+        repository.addSources(listOf(designerNewsSource))
 
         // Then the source was added to the data source
         verify(localDataSource).addSource(designerNewsSource.key, designerNewsSource.active)
     }
 
     @Test
-    fun updateSource() {
-        // When updating a source
-        repository.updateSource(designerNewsSource)
+    fun changeSourceActiveState() {
+        // Given that an active source is added
+        repository.addSources(listOf(designerNewsSource))
+
+        // When changing the active state of a source
+        repository.changeSourceActiveState(designerNewsSource.key)
 
         // Then the source was updated in the data source
-        verify(localDataSource).updateSource(designerNewsSource.key, designerNewsSource.active)
+        verify(localDataSource).updateSource(designerNewsSource.key, false)
     }
 
     @Test
     fun removeSource() {
         // When removing a source
-        repository.removeSource(designerNewsSource)
+        repository.removeSource("key")
 
         // Then the source was removed from the data source
-        verify(localDataSource).removeSource(designerNewsSource.key)
+        verify(localDataSource).removeSource("key")
     }
 
     @Test
-    fun addSource_addsSourceCache() {
+    fun addSources_addsSourceCache() = runBlocking {
         // When adding a source
-        repository.addSource(designerNewsSource)
+        repository.addSources(listOf(designerNewsSource))
 
         // Then the source is returned
         val sources = repository.getSources()
@@ -137,32 +142,28 @@ class SourcesRepositoryTest {
     }
 
     @Test
-    fun updateSource_updatesInCache() {
+    fun changeSourceActiveState_updatesInCache() = runBlocking {
         // Given an added source
-        repository.addSource(designerNewsSource)
+        repository.addSources(listOf(designerNewsSource))
 
-        // When updating a source
-        val designerNewsInactive = Source.DesignerNewsSearchSource(
-                "query",
-                false
-        )
-        repository.updateSource(designerNewsInactive)
+        // When changing the active state of a source
+        repository.changeSourceActiveState(designerNewsSource.key)
 
         // Then the updated source is returned
         val sources = repository.getSources()
         assertEquals(1, sources.size)
         val updatedSource = sources[0]
-        assertEquals(designerNewsInactive.key, updatedSource.key)
-        assertEquals(designerNewsInactive.active, updatedSource.active)
+        assertEquals(designerNewsSource.key, updatedSource.key)
+        assertEquals(false, updatedSource.active)
     }
 
     @Test
-    fun removeSource_removesFromCache() {
+    fun removeSource_removesFromCache() = runBlocking {
         // Given an added source
-        repository.addSource(designerNewsSource)
+        repository.addSources(listOf(designerNewsSource))
 
         // When removing a source
-        repository.removeSource(designerNewsSource)
+        repository.removeSource(designerNewsSource.key)
 
         // Then the source was removed from cache
         val sources = repository.getSources()
@@ -172,36 +173,38 @@ class SourcesRepositoryTest {
     @Test
     fun listenerNotified_whenSourceAdded() {
         // Given a callback registered
-        var sourceAdded: Source? = null
+        var sourceAdded: List<SourceItem>? = null
         val callback = object : FiltersChangedCallback() {
-            override fun onFiltersChanged(changedFilter: Source) {
-                super.onFiltersChanged(changedFilter)
-                sourceAdded = changedFilter
+            override fun onFiltersUpdated(sources: List<SourceItem>) {
+                super.onFiltersUpdated(sources)
+                sourceAdded = sources
             }
         }
         repository.registerFilterChangedCallback(callback)
 
-        // When adding a source
-        repository.addSource(designerNewsSource)
+        // When adding a list of sources
+        repository.addSources(listOf(designerNewsSource))
 
         // Then the callback was triggered
-        assertEquals(sourceAdded, designerNewsSource)
+        assertEquals(sourceAdded, listOf(designerNewsSource))
     }
 
     @Test
-    fun listenerNotified_whenSourceUpdated() {
+    fun listenerNotified_whenSourceActiveStateChanged() {
+        // Given a source added
+        repository.addSources(listOf(designerNewsSource))
         // Given a callback registered
-        var sourceUpdated: Source? = null
+        var sourceUpdated: SourceItem? = null
         val callback = object : FiltersChangedCallback() {
-            override fun onFiltersChanged(changedFilter: Source) {
+            override fun onFiltersChanged(changedFilter: SourceItem) {
                 super.onFiltersChanged(changedFilter)
                 sourceUpdated = changedFilter
             }
         }
         repository.registerFilterChangedCallback(callback)
 
-        // When updating a source
-        repository.updateSource(designerNewsSource)
+        // When changing the active state of a source
+        repository.changeSourceActiveState(designerNewsSource.key)
 
         // Then the callback was triggered
         assertEquals(sourceUpdated, designerNewsSource)
@@ -209,28 +212,29 @@ class SourcesRepositoryTest {
 
     @Test
     fun listenerNotified_whenSourceRemoved() {
+        // Given a source added
+        repository.addSources(listOf(designerNewsSource))
         // Given a callback registered
-        var sourceRemoved: Source? = null
+        var sourceRemoved: String? = null
         val callback = object : FiltersChangedCallback() {
-            override fun onFilterRemoved(removed: Source) {
-                sourceRemoved = removed
+            override fun onFilterRemoved(sourceKey: String) {
+                sourceRemoved = sourceKey
             }
         }
         repository.registerFilterChangedCallback(callback)
 
         // When removing a source
-        repository.removeSource(designerNewsSource)
+        repository.removeSource(designerNewsSource.key)
 
         // Then the callback was triggered
-        assertEquals(sourceRemoved, designerNewsSource)
+        assertEquals(sourceRemoved, designerNewsSource.key)
     }
 
     @Test
     fun getActiveSourceCount() {
         // Given an active and an inactive source added
-        repository.addSource(designerNewsSource) // active source
-        repository.addSource(productHuntSource) // inactive source
-        val keys = setOf(dnSourceKey, phSourceKey)
+        repository.addSources(listOf(designerNewsSource, productHuntSource))
+        val keys = setOf(dnSourceKey, SOURCE_PRODUCT_HUNT)
         whenever(localDataSource.getKeys()).thenReturn(keys)
         whenever(localDataSource.getSourceActiveState(dnSourceKey)).thenReturn(true)
 

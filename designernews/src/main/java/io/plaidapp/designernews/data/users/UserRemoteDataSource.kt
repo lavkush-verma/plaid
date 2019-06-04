@@ -17,9 +17,9 @@
 package io.plaidapp.designernews.data.users
 
 import io.plaidapp.core.data.Result
-import io.plaidapp.core.designernews.data.api.DesignerNewsService
 import io.plaidapp.core.designernews.data.users.model.User
 import io.plaidapp.core.util.safeApiCall
+import io.plaidapp.designernews.data.api.DesignerNewsService
 import java.io.IOException
 import javax.inject.Inject
 

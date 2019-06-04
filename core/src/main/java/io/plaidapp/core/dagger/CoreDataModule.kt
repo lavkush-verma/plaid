@@ -24,6 +24,7 @@ import io.plaidapp.core.BuildConfig
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.converter.gson.GsonConverterFactory
+import javax.inject.Singleton
 
 /**
  * Dagger module to provide core data functionality.
@@ -32,8 +33,8 @@ import retrofit2.converter.gson.GsonConverterFactory
 class CoreDataModule {
 
     @Provides
-    fun provideOkHttpClientBuilder(interceptor: HttpLoggingInterceptor): OkHttpClient.Builder =
-        OkHttpClient.Builder().addInterceptor(interceptor)
+    fun provideOkHttpClient(interceptor: HttpLoggingInterceptor): OkHttpClient =
+        OkHttpClient.Builder().addInterceptor(interceptor).build()
 
     @Provides
     fun provideLoggingInterceptor(): HttpLoggingInterceptor =
@@ -49,9 +50,11 @@ class CoreDataModule {
     fun provideCallAdapterFactory(): CoroutineCallAdapterFactory = CoroutineCallAdapterFactory()
 
     @Provides
+    @Singleton
     fun provideGson(): Gson = Gson()
 
     @Provides
+    @Singleton
     fun provideGsonConverterFactory(gson: Gson): GsonConverterFactory =
         GsonConverterFactory.create(gson)
 }

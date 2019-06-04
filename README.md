@@ -2,11 +2,13 @@
 
 Rewriting Plaid using [Android Architecture Components](https://developer.android.com/topic/libraries/architecture/), in Kotlin. 
 
-🛑 During the initial development stage, we're not accepting external PRs. 🛑
+👀 "[Up for grabs](https://github.com/nickbutcher/plaid/issues?q=is%3Aissue+is%3Aopen+label%3A%22Up+for+grabs+%F0%9F%A4%9A%22)" issues – We're happy to [get your contributions](https://github.com/nickbutcher/plaid/blob/master/CONTRIBUTING.md#contributing-a-patch) on those!
 
-👍 Comments and new issues created are welcomed. 
+👍 Comments and new issues created are welcomed.
 
-[![CircleCI](https://circleci.com/gh/nickbutcher/plaid/tree/master.svg?style=shield)](https://circleci.com/gh/nickbutcher/plaid/tree/master)
+🛑 We're currently not accepting external PRs that touch on the app's architecture.
+
+[![CircleCI](https://circleci.com/gh/android/plaid/tree/master.svg?style=shield)](https://circleci.com/gh/android/plaid/tree/master)
 
 ### Background
 
@@ -14,10 +16,19 @@ Plaid was written with one big goal: showcase material design in Android in a re
 Plaid represents a great real world app example: it provides a fairly complex set of functionalities, it has technical debt, it has features that have to be dealt with as APIs are being removed.
 All of these problems are encountered by many projects in the Android community and therefore, make Plaid a suitable showcase for all the advantages that architecture components bring. 
 
-#### Read more
+#### More information
 
-* [Restitching Plaid - Updating Plaid to modern app standards](https://medium.com/@crafty/restitching-plaid-9ca5588d3b0a)
-* [A patchwork Plaid - Monolith to modularized app](https://medium.com/androiddevelopers/a-patchwork-plaid-monolith-to-modularized-app-60235d9f212e)
+* Read more:
+
+	* [Restitching Plaid - Updating Plaid to modern app standards](https://medium.com/@crafty/restitching-plaid-9ca5588d3b0a)
+	* [A patchwork Plaid - Monolith to modularized app](https://medium.com/androiddevelopers/a-patchwork-plaid-monolith-to-modularized-app-60235d9f212e)
+	* [Cross-stitching Plaid and AndroidX](https://medium.com/androiddevelopers/cross-stitching-plaid-and-androidx-7603a192348e)
+	* [Dependency injection in a multi module project](https://medium.com/androiddevelopers/dependency-injection-in-a-multi-module-project-1a09511c14b7)
+
+* Video Presentations:
+
+	* [Shaping Your App's Architecture with Kotlin and Architecture Components by Florina](https://youtu.be/Sy6ZdgqrQp0) (Florina Muntenescu at KotlinConf 2018)
+	* [Re-stitching Plaid with Kotlin](https://youtu.be/NNWejxBORgc) (Florina Muntenescu at Android Dev Summit '18)
 
 ### Goals
 * Migrate Plaid to Architecture Components. The refactoring will follow the architecture described in [Guide to App Architecture](https://developer.android.com/jetpack/docs/guide).  

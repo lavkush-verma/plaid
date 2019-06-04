@@ -45,20 +45,22 @@ import androidx.annotation.TransitionRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.text.set
 import androidx.core.text.toSpannable
+import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.integration.recyclerview.RecyclerViewPreloader
 import com.bumptech.glide.util.ViewPreloadSizeProvider
+import io.plaidapp.core.dagger.qualifier.IsPocketInstalled
 import io.plaidapp.core.dribbble.data.api.model.Shot
-import io.plaidapp.core.ui.FeedAdapter
-import io.plaidapp.core.ui.getPlaidItemsForDisplay
+import io.plaidapp.core.feed.FeedAdapter
+import io.plaidapp.core.ui.expandPopularItems
 import io.plaidapp.core.ui.recyclerview.InfiniteScrollListener
 import io.plaidapp.core.ui.recyclerview.SlideInItemAnimator
 import io.plaidapp.core.util.Activities
+import io.plaidapp.core.util.ColorUtils
 import io.plaidapp.core.util.ImeUtils
 import io.plaidapp.core.util.ShortcutHelper
 import io.plaidapp.core.util.TransitionUtils
-import io.plaidapp.core.util.event.EventObserver
 import io.plaidapp.search.R
 import io.plaidapp.search.dagger.Injector
 import io.plaidapp.search.ui.transitions.CircularReveal
@@ -88,11 +90,14 @@ class SearchActivity : AppCompatActivity() {
     private val transitions = SparseArray<Transition>()
     private var focusQuery = true
 
+    private lateinit var feedAdapter: FeedAdapter
+
     @Inject
     lateinit var viewModel: SearchViewModel
 
-    @Inject
-    lateinit var feedAdapter: FeedAdapter
+    @JvmField
+    @field:[Inject IsPocketInstalled]
+    var pocketInstalled: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -102,8 +107,10 @@ class SearchActivity : AppCompatActivity() {
 
         Injector.inject(this)
 
-        viewModel.searchResults.observe(this, EventObserver { data ->
-            if (data.isNotEmpty()) {
+        feedAdapter = FeedAdapter(this, columns, pocketInstalled, ColorUtils.isDarkTheme(this))
+
+        viewModel.searchResults.observe(this, Observer { searchUiModel ->
+            if (searchUiModel.items.isNotEmpty()) {
                 if (results.visibility != View.VISIBLE) {
                     TransitionManager.beginDelayedTransition(
                         container,
@@ -113,8 +120,8 @@ class SearchActivity : AppCompatActivity() {
                     results.visibility = View.VISIBLE
                     fab.visibility = View.VISIBLE
                 }
-                val feedItems = feedAdapter.items
-                val items = getPlaidItemsForDisplay(feedItems, data)
+                val items = searchUiModel.items
+                expandPopularItems(items, columns)
                 feedAdapter.items = items
             } else {
                 TransitionManager.beginDelayedTransition(
@@ -124,6 +131,15 @@ class SearchActivity : AppCompatActivity() {
                 setNoResultsVisibility(View.VISIBLE)
             }
         })
+
+        viewModel.searchProgress.observe(this, Observer { progress ->
+            if (progress.isLoading) {
+                feedAdapter.dataStartedLoading()
+            } else {
+                feedAdapter.dataFinishedLoading()
+            }
+        })
+
         val shotPreloadSizeProvider = ViewPreloadSizeProvider<Shot>()
 
         setExitSharedElementCallback(FeedAdapter.createSharedElementReenterCallback(this))
@@ -140,9 +156,13 @@ class SearchActivity : AppCompatActivity() {
             itemAnimator = SlideInItemAnimator()
             this.layoutManager = layoutManager
             addOnScrollListener(object :
-                InfiniteScrollListener(layoutManager, viewModel.getDataLoadingSubject()) {
+                InfiniteScrollListener(layoutManager) {
                 override fun onLoadMore() {
                     viewModel.loadMore()
+                }
+
+                override fun isDataLoading(): Boolean {
+                    return viewModel.searchProgress.value?.isLoading ?: false
                 }
             })
             setHasFixedSize(true)
@@ -180,6 +200,7 @@ class SearchActivity : AppCompatActivity() {
     }
 
     override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
         if (intent.hasExtra(SearchManager.QUERY)) {
             val query = intent.getStringExtra(SearchManager.QUERY)
             if (!TextUtils.isEmpty(query)) {
@@ -266,7 +287,7 @@ class SearchActivity : AppCompatActivity() {
             container,
             getTransition(io.plaidapp.core.R.transition.auto)
         )
-        feedAdapter.clear()
+        feedAdapter.items = emptyList()
         viewModel.clearResults()
         results.visibility = View.GONE
         progress.visibility = View.GONE
@@ -282,7 +303,7 @@ class SearchActivity : AppCompatActivity() {
                 noResults =
                     (findViewById<View>(R.id.stub_no_search_results) as ViewStub).inflate() as TextView
                 noResults?.apply {
-                    setOnClickListener { v ->
+                    setOnClickListener {
                         searchView.setQuery("", false)
                         searchView.requestFocus()
                         ImeUtils.showIme(searchView)
@@ -338,7 +359,7 @@ class SearchActivity : AppCompatActivity() {
                     return true
                 }
             })
-            setOnQueryTextFocusChangeListener { v, hasFocus ->
+            setOnQueryTextFocusChangeListener { _, hasFocus ->
                 if (hasFocus && confirmSaveContainer.visibility == View.VISIBLE) {
                     hideSaveConfirmation()
                 }

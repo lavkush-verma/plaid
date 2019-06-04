@@ -18,10 +18,7 @@
 
 package io.plaidapp.dagger
 
-import io.plaidapp.core.dagger.OnDataLoadedModule
 import io.plaidapp.core.dagger.SharedPreferencesModule
-import io.plaidapp.core.data.OnDataLoadedCallback
-import io.plaidapp.core.data.PlaidItem
 import io.plaidapp.core.designernews.data.login.LoginLocalDataSource
 import io.plaidapp.ui.HomeActivity
 import io.plaidapp.ui.coreComponent
@@ -29,17 +26,13 @@ import io.plaidapp.ui.coreComponent
 /**
  * Injector for HomeActivity.
  */
-fun inject(
-    activity: HomeActivity,
-    dataLoadedCallback: OnDataLoadedCallback<List<PlaidItem>>
-) {
+fun inject(activity: HomeActivity) {
     DaggerHomeComponent.builder()
         .coreComponent(activity.coreComponent())
-        .dataLoadedModule(OnDataLoadedModule(dataLoadedCallback))
-        .homeModule(HomeModule(activity))
         .sharedPreferencesModule(
             SharedPreferencesModule(activity, LoginLocalDataSource.DESIGNER_NEWS_PREF)
         )
+        .homeActivity(activity)
         .build()
         .inject(activity)
 }

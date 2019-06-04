@@ -17,10 +17,10 @@
 package io.plaidapp.designernews.data.votes
 
 import io.plaidapp.core.data.Result
-import io.plaidapp.core.designernews.data.api.DesignerNewsService
-import io.plaidapp.core.designernews.data.votes.model.UpvoteCommentRequest
-import io.plaidapp.core.designernews.data.votes.model.UpvoteStoryRequest
+import io.plaidapp.designernews.data.votes.model.UpvoteCommentRequest
+import io.plaidapp.designernews.data.votes.model.UpvoteStoryRequest
 import io.plaidapp.core.util.safeApiCall
+import io.plaidapp.designernews.data.api.DesignerNewsService
 import java.io.IOException
 import javax.inject.Inject
 

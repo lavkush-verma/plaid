@@ -63,14 +63,14 @@ object DribbbleSearchConverter : Converter<ResponseBody, List<Shot>> {
         val title = descriptionBlock.select("strong").first().text()
         // API responses wrap description in a <p> tag. Do the same for consistent display.
         var description = descriptionBlock.select("span.comment").text().trim { it <= ' ' }
-        if (!description.isNullOrEmpty()) {
+        if (description.isNotEmpty()) {
             description = "<p>$description</p>"
         }
         var imgUrl = element.select("img").first().attr("src")
         if (imgUrl.contains("_teaser.")) {
             imgUrl = imgUrl.replace("_teaser.", ".")
         }
-        val animated = element.select("div.gif-indicator").first() != null
+        val animated = imgUrl?.endsWith(".gif", ignoreCase = true) ?: false
         val createdAt: Date? = try {
             DATE_FORMAT.parse(descriptionBlock.select("em.timestamp").first().text())
         } catch (e: ParseException) {

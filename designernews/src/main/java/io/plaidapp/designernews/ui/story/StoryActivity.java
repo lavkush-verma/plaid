@@ -23,7 +23,6 @@ import android.animation.ObjectAnimator;
 import android.annotation.TargetApi;
 import android.app.SharedElementCallback;
 import android.app.assist.AssistContent;
-import androidx.lifecycle.ViewModelProviders;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.content.res.Resources;
@@ -32,15 +31,6 @@ import android.graphics.drawable.AnimatedVectorDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.core.app.ActivityCompat;
-import androidx.core.app.ActivityOptionsCompat;
-import androidx.core.app.ShareCompat;
-import androidx.core.content.ContextCompat;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -49,13 +39,21 @@ import android.text.style.TextAppearanceSpan;
 import android.view.View;
 import android.view.ViewAnimationUtils;
 import android.view.ViewGroup;
-import android.view.animation.Interpolator;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.Toolbar;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.app.ActivityOptionsCompat;
+import androidx.core.app.ShareCompat;
+import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.resource.bitmap.BitmapTransitionOptions;
 import in.uncod.android.bypass.Markdown;
@@ -70,6 +68,7 @@ import io.plaidapp.core.ui.transitions.ReflowText;
 import io.plaidapp.core.ui.widget.CollapsingTitleLayout;
 import io.plaidapp.core.ui.widget.ElasticDragDismissFrameLayout;
 import io.plaidapp.core.util.Activities;
+import io.plaidapp.core.util.ColorUtils;
 import io.plaidapp.core.util.HtmlUtils;
 import io.plaidapp.core.util.ImeUtils;
 import io.plaidapp.core.util.ViewUtils;
@@ -229,6 +228,7 @@ public class StoryActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
         switch (requestCode) {
             case RC_LOGIN_UPVOTE:
                 if (resultCode == RESULT_OK) {
@@ -592,8 +592,8 @@ public class StoryActivity extends AppCompatActivity {
     private void needsLogin(View triggeringView, int requestCode) {
         Intent login = new Intent(StoryActivity.this,
                 LoginActivity.class);
-        MorphTransform.addExtras(login, ContextCompat.getColor(this,
-                io.plaidapp.R.color.background_light),
+        MorphTransform.addExtras(login,
+                ColorUtils.getThemeColor(this, io.plaidapp.core.R.attr.colorSurface),
                 triggeringView.getHeight() / 2);
         ActivityOptionsCompat options = ActivityOptionsCompat.makeSceneTransitionAnimation(
                 StoryActivity.this,
@@ -874,9 +874,8 @@ public class StoryActivity extends AppCompatActivity {
                             result -> {
                                 if (result instanceof Result.Success) {
                                     comment.setUpvoted(true);
-                                    ;
                                     // TODO fix this
-//                                    comment.vote_count++;
+                                    // comment.vote_count++;
                                     holder.getCommentVotes().setText(String.valueOf(comment.getUpvotesCount()));
                                     holder.getCommentVotes().setActivated(true);
                                 } else {
@@ -901,64 +900,6 @@ public class StoryActivity extends AppCompatActivity {
             holder.getCommentReply().clearFocus();
         }
 
-        private void handleCommentReplyFocus(CommentReplyViewHolder holder,
-                                             Interpolator interpolator) {
-            holder.getCommentVotes().animate()
-                    .translationX(-holder.getCommentVotes().getWidth())
-                    .alpha(0f)
-                    .setDuration(200L)
-                    .setInterpolator(interpolator);
-            holder.getReplyLabel().animate()
-                    .translationX(-holder.getCommentVotes().getWidth())
-                    .setDuration(200L)
-                    .setInterpolator(interpolator);
-            holder.getPostReply().setVisibility(View.VISIBLE);
-            holder.getPostReply().setAlpha(0f);
-            holder.getPostReply().animate()
-                    .alpha(1f)
-                    .setDuration(200L)
-                    .setInterpolator(interpolator)
-                    .setListener(new AnimatorListenerAdapter() {
-                        @Override
-                        public void onAnimationStart(Animator animation) {
-                            holder.itemView.setHasTransientState(true);
-                        }
-
-                        @Override
-                        public void onAnimationEnd(Animator animation) {
-                            holder.itemView.setHasTransientState(false);
-                        }
-                    });
-        }
-
-        private void handleCommentReplyFocusLoss(CommentReplyViewHolder holder,
-                                                 Interpolator interpolator) {
-            holder.getCommentVotes().animate()
-                    .translationX(0f)
-                    .alpha(1f)
-                    .setDuration(200L)
-                    .setInterpolator(interpolator);
-            holder.getReplyLabel().animate()
-                    .translationX(0f)
-                    .setDuration(200L)
-                    .setInterpolator(interpolator);
-            holder.getPostReply().animate()
-                    .alpha(0f)
-                    .setDuration(200L)
-                    .setInterpolator(interpolator)
-                    .setListener(new AnimatorListenerAdapter() {
-                        @Override
-                        public void onAnimationStart(Animator animation) {
-                            holder.itemView.setHasTransientState(true);
-                        }
-
-                        @Override
-                        public void onAnimationEnd(Animator animation) {
-                            holder.getPostReply().setVisibility(View.INVISIBLE);
-                            holder.itemView.setHasTransientState(true);
-                        }
-                    });
-        }
 
         @NonNull
         private CommentReplyViewHolder createCommentReplyHolder(ViewGroup parent) {
@@ -1011,15 +952,13 @@ public class StoryActivity extends AppCompatActivity {
 
             holder.getCommentReply().setOnFocusChangeListener((v, hasFocus) -> {
                 replyToCommentFocused = hasFocus;
-                final Interpolator interpolator = getFastOutSlowInInterpolator(holder
-                        .itemView.getContext());
                 if (hasFocus) {
-                    handleCommentReplyFocus(holder, interpolator);
-                    updateFabVisibility();
+                    holder.createCommentReplyFocusAnimator().start();
+
                 } else {
-                    handleCommentReplyFocusLoss(holder, interpolator);
-                    updateFabVisibility();
+                    holder.createCommentReplyFocusLossAnimator().start();
                 }
+                updateFabVisibility();
                 holder.getPostReply().setActivated(hasFocus);
             });
             return holder;

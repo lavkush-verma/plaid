@@ -19,13 +19,11 @@ package io.plaidapp.designernews.dagger
 import androidx.lifecycle.ViewModelProviders
 import dagger.Module
 import dagger.Provides
-import io.plaidapp.core.dagger.CoreDataModule
-import io.plaidapp.core.dagger.MarkdownModule
-import io.plaidapp.core.dagger.SharedPreferencesModule
-import io.plaidapp.core.dagger.designernews.DesignerNewsDataModule
+import io.plaidapp.core.dagger.scope.FeatureScope
 import io.plaidapp.core.data.CoroutinesDispatcherProvider
-import io.plaidapp.core.designernews.data.api.DesignerNewsService
-import io.plaidapp.core.designernews.data.comments.CommentsRemoteDataSource
+import io.plaidapp.designernews.data.api.DesignerNewsService
+import io.plaidapp.designernews.data.comments.CommentsRemoteDataSource
+import io.plaidapp.designernews.data.comments.CommentsRepository
 import io.plaidapp.designernews.data.users.UserRemoteDataSource
 import io.plaidapp.designernews.data.users.UserRepository
 import io.plaidapp.designernews.data.votes.VotesRemoteDataSource
@@ -45,12 +43,7 @@ import io.plaidapp.designernews.ui.story.StoryViewModelFactory
 /**
  * Dagger module for [StoryActivity].
  */
-@Module(
-    includes = [CoreDataModule::class,
-        DesignerNewsDataModule::class,
-        MarkdownModule::class,
-        SharedPreferencesModule::class]
-)
+@Module
 class StoryModule(private val storyId: Long, private val activity: StoryActivity) {
 
     @Provides
@@ -87,14 +80,22 @@ class StoryModule(private val storyId: Long, private val activity: StoryActivity
         )
 
     @Provides
+    @FeatureScope
     fun provideUserRepository(dataSource: UserRemoteDataSource): UserRepository =
-        UserRepository.getInstance(dataSource)
+        UserRepository(dataSource)
 
     @Provides
+    @FeatureScope
     fun provideCommentsRemoteDataSource(service: DesignerNewsService): CommentsRemoteDataSource =
-        CommentsRemoteDataSource.getInstance(service)
+        CommentsRemoteDataSource(service)
 
     @Provides
+    @FeatureScope
     fun provideVotesRepository(remoteDataSource: VotesRemoteDataSource): VotesRepository =
-        VotesRepository.getInstance(remoteDataSource)
+        VotesRepository(remoteDataSource)
+
+    @Provides
+    @FeatureScope
+    fun provideCommentsRepository(dataSource: CommentsRemoteDataSource): CommentsRepository =
+        CommentsRepository(dataSource)
 }

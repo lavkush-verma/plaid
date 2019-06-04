@@ -16,46 +16,97 @@
 
 package io.plaidapp.search.ui
 
+import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verify
-import io.plaidapp.search.domain.SearchDataManager
+import com.nhaarman.mockitokotlin2.whenever
+import io.plaidapp.core.data.PlaidItem
+import io.plaidapp.core.data.Result
+import io.plaidapp.core.data.SourceItem
+import io.plaidapp.core.interfaces.PlaidDataSource
+import io.plaidapp.core.interfaces.SearchDataSourceFactory
+import io.plaidapp.search.domain.SearchDataSourceFactoriesRegistry
+import io.plaidapp.search.shots
+import io.plaidapp.search.testShot1
+import io.plaidapp.test.shared.LiveDataTestUtil
+import io.plaidapp.test.shared.provideFakeCoroutinesDispatcherProvider
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
+import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.mockito.MockitoAnnotations
 
 /**
  * Tests for [SearchViewModel] that mocks the dependencies
  */
 class SearchViewModelTest {
 
-    private val dataManager: SearchDataManager = mock()
-    private val viewModel = SearchViewModel(dataManager)
+    // Executes tasks in the Architecture Components in the same thread
+    @get:Rule
+    var instantTaskExecutorRule = InstantTaskExecutorRule()
+
+    private val factory = FakeSearchDataSourceFactory()
+    private val registry: SearchDataSourceFactoriesRegistry = mock()
+
+    @Before
+    fun setup() {
+        MockitoAnnotations.initMocks(this)
+        whenever(registry.dataSourceFactories).thenReturn(setOf(factory))
+    }
 
     @Test
-    fun searchFor_searchesInDataManager() {
+    fun searchFor_searchesInDataManager() = runBlocking {
         // Given a query
         val query = "Plaid"
+        // And an expected success result
+        val result = Result.Success(shots)
+        factory.dataSource.result = result
+        val viewModel = SearchViewModel(registry, provideFakeCoroutinesDispatcherProvider())
 
         // When searching for the query
         viewModel.searchFor(query)
 
-        // Then search is called in data manager
-        verify(dataManager).searchFor(query)
+        // Then search results emits with the data that was passed initially
+        val results = LiveDataTestUtil.getValue(viewModel.searchResults)
+        assertEquals(results!!.items, result.data)
     }
 
     @Test
-    fun loadMore_loadsInDataManager() {
+    fun loadMore_loadsInDataManager() = runBlocking {
+        // Given a query
+        val query = "Plaid"
+        val viewModel = SearchViewModel(registry, provideFakeCoroutinesDispatcherProvider())
+        // And a search for the query
+        viewModel.searchFor(query)
+        // Given a result
+        val moreResult = Result.Success(listOf(testShot1))
+        factory.dataSource.result = moreResult
+
         // When loading more
         viewModel.loadMore()
 
-        // Then load more is called in data manager
-        verify(dataManager).loadMore()
+        // Then search results emits with the data that was passed
+        val results = LiveDataTestUtil.getValue(viewModel.searchResults)
+        assertEquals(results!!.items, moreResult.data)
     }
+}
 
-    @Test
-    fun clearResults_clearsInDataManager() {
-        // When clearing results
-        viewModel.clearResults()
+val sourceItem = object : SourceItem(
+    "id", "query", 100, "name", 0, true, true
+) {}
 
-        // Then clear results is called in data manager
-        verify(dataManager).clear()
+class FakeSearchDataSourceFactory : SearchDataSourceFactory {
+    var dataSource = FakeDataSource()
+    override fun create(query: String): PlaidDataSource {
+        return dataSource
+    }
+}
+
+class FakeDataSource : PlaidDataSource(sourceItem) {
+
+    var result = Result.Success(emptyList<PlaidItem>())
+
+    override suspend fun loadMore(): Result<List<PlaidItem>> {
+        return result
     }
 }

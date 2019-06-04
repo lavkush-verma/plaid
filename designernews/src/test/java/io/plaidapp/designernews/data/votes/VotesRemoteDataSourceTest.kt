@@ -21,7 +21,7 @@ import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import io.plaidapp.core.data.Result
-import io.plaidapp.core.designernews.data.api.DesignerNewsService
+import io.plaidapp.designernews.data.api.DesignerNewsService
 import io.plaidapp.designernews.errorResponseBody
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.runBlocking

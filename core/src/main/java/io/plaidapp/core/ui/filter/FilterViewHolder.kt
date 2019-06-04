@@ -24,13 +24,14 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.animation.doOnEnd
 import androidx.core.animation.doOnStart
-import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import io.plaidapp.core.R
-import io.plaidapp.core.data.Source
 import io.plaidapp.core.util.AnimUtils
 import io.plaidapp.core.util.ColorUtils
 import io.plaidapp.core.util.ViewUtils
+
+private const val FILTER_ICON_ENABLED_ALPHA = 179 // 70%
+private const val FILTER_ICON_DISABLED_ALPHA = 51 // 20%
 
 /**
  * ViewHolder for filters.
@@ -48,7 +49,7 @@ class FilterViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         filterName.isEnabled = enable
     }
 
-    fun bind(filter: Source) {
+    fun bind(filter: SourceUiModel) {
         isSwipeable = filter.isSwipeDismissable
         filterName.text = filter.name
         filterName.isEnabled = filter.active
@@ -58,9 +59,9 @@ class FilterViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
             )
         }
         filterIcon.imageAlpha = if (filter.active)
-            FilterAdapter.FILTER_ICON_ENABLED_ALPHA
+            FILTER_ICON_ENABLED_ALPHA
         else
-            FilterAdapter.FILTER_ICON_DISABLED_ALPHA
+            FILTER_ICON_DISABLED_ALPHA
     }
 
     fun createEnableDisableAnimator(preInfo: FilterHolderInfo): Animator {
@@ -68,9 +69,9 @@ class FilterViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
                 filterIcon,
                 ViewUtils.IMAGE_ALPHA,
                 if (preInfo.doEnable) {
-                    FilterAdapter.FILTER_ICON_ENABLED_ALPHA
+                    FILTER_ICON_ENABLED_ALPHA
                 } else {
-                    FilterAdapter.FILTER_ICON_DISABLED_ALPHA
+                    FILTER_ICON_DISABLED_ALPHA
                 }
         )
         iconAlpha.apply {
@@ -84,7 +85,7 @@ class FilterViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
     }
 
     fun createHighlightAnimator(): Animator {
-        val highlightColor = ContextCompat.getColor(itemView.context, R.color.accent)
+        val highlightColor = ColorUtils.getThemeColor(itemView.context, R.attr.colorPrimary)
         val fadeFromTo = ColorUtils.modifyAlpha(highlightColor, 0)
 
         return ObjectAnimator.ofArgb(

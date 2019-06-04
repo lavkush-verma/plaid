@@ -23,6 +23,8 @@ apply plugin: 'kotlin-kapt'
 apply from: '../core_dependencies.gradle'
 apply from: '../test_dependencies.gradle'
 
+apply from: '../repositories.gradle'
+
 android {
     compileSdkVersion versions.compileSdk
 
@@ -62,14 +64,7 @@ android {
 
 }
 
-repositories {
-    google()
-    jcenter()
-    maven { url 'http://dl.bintray.com/kotlin/kotlin-eap' }
-}
-
 dependencies {
-    kapt "androidx.room:room-compiler:${versions.room}"
     kapt "com.github.bumptech.glide:compiler:${versions.glide}"
     kapt "com.google.dagger:dagger-compiler:${versions.dagger}"
 }

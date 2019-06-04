@@ -16,23 +16,19 @@
 
 package io.plaidapp.core.dagger.designernews
 
-import android.content.Context
 import android.content.SharedPreferences
 import com.google.gson.Gson
 import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
+import dagger.Lazy
 import dagger.Module
 import dagger.Provides
 import io.plaidapp.core.BuildConfig
-import io.plaidapp.core.dagger.CoreDataModule
-import io.plaidapp.core.dagger.CoroutinesDispatcherProviderModule
-import io.plaidapp.core.dagger.SharedPreferencesModule
-import io.plaidapp.core.data.api.DenvelopingConverter
+import io.plaidapp.core.dagger.DesignerNewsApi
+import io.plaidapp.core.dagger.scope.FeatureScope
+import io.plaidapp.core.data.api.DeEnvelopingConverter
 import io.plaidapp.core.designernews.data.api.ClientAuthInterceptor
+import io.plaidapp.core.designernews.data.api.DesignerNewsSearchConverter
 import io.plaidapp.core.designernews.data.api.DesignerNewsService
-import io.plaidapp.core.designernews.data.comments.CommentsRemoteDataSource
-import io.plaidapp.core.designernews.data.comments.CommentsRepository
-import io.plaidapp.core.designernews.data.database.DesignerNewsDatabase
-import io.plaidapp.core.designernews.data.database.LoggedInUserDao
 import io.plaidapp.core.designernews.data.login.AuthTokenLocalDataSource
 import io.plaidapp.core.designernews.data.login.LoginLocalDataSource
 import io.plaidapp.core.designernews.data.login.LoginRemoteDataSource
@@ -46,16 +42,11 @@ import retrofit2.converter.gson.GsonConverterFactory
 /**
  * Dagger module to provide data functionality for DesignerNews.
  */
-@Module(
-    includes = [
-        SharedPreferencesModule::class,
-        CoreDataModule::class,
-        CoroutinesDispatcherProviderModule::class
-    ]
-)
+@Module
 class DesignerNewsDataModule {
 
     @Provides
+    @FeatureScope
     fun provideLoginRepository(
         localSource: LoginLocalDataSource,
         remoteSource: LoginRemoteDataSource
@@ -63,26 +54,34 @@ class DesignerNewsDataModule {
         LoginRepository.getInstance(localSource, remoteSource)
 
     @Provides
+    @FeatureScope
     fun provideAuthTokenLocalDataSource(
         sharedPreferences: SharedPreferences
     ): AuthTokenLocalDataSource =
         AuthTokenLocalDataSource.getInstance(sharedPreferences)
 
     @Provides
+    @DesignerNewsApi
+    fun providePrivateOkHttpClient(
+        upstream: OkHttpClient,
+        tokenHolder: AuthTokenLocalDataSource
+    ): OkHttpClient {
+        return upstream.newBuilder()
+            .addInterceptor(ClientAuthInterceptor(tokenHolder, BuildConfig.DESIGNER_NEWS_CLIENT_ID))
+            .build()
+    }
+
+    @Provides
+    @FeatureScope
     fun provideDesignerNewsService(
-        okHttpClientBuilder: OkHttpClient.Builder,
-        tokenHolder: AuthTokenLocalDataSource,
+        @DesignerNewsApi client: Lazy<OkHttpClient>,
         gson: Gson
     ): DesignerNewsService {
-        val client = okHttpClientBuilder
-            .addInterceptor(
-                ClientAuthInterceptor(tokenHolder, BuildConfig.DESIGNER_NEWS_CLIENT_ID)
-            )
-            .build()
         return Retrofit.Builder()
             .baseUrl(DesignerNewsService.ENDPOINT)
-            .client(client)
-            .addConverterFactory(DenvelopingConverter(gson))
+            .callFactory { client.get().newCall(it) }
+            .addConverterFactory(DeEnvelopingConverter(gson))
+            .addConverterFactory(DesignerNewsSearchConverter.Factory())
             .addConverterFactory(GsonConverterFactory.create(gson))
             .addCallAdapterFactory(CoroutineCallAdapterFactory())
             .build()
@@ -90,21 +89,15 @@ class DesignerNewsDataModule {
     }
 
     @Provides
-    fun provideLoggedInUserDao(context: Context): LoggedInUserDao {
-        return DesignerNewsDatabase.getInstance(context).loggedInUserDao()
-    }
-
-    @Provides
+    @FeatureScope
     fun provideStoriesRepository(
         storiesRemoteDataSource: StoriesRemoteDataSource
     ): StoriesRepository =
         StoriesRepository.getInstance(storiesRemoteDataSource)
 
     @Provides
-    fun provideStoriesRemoteDataSource(service: DesignerNewsService): StoriesRemoteDataSource =
-        StoriesRemoteDataSource.getInstance(service)
-
-    @Provides
-    fun provideCommentsRepository(dataSource: CommentsRemoteDataSource): CommentsRepository =
-        CommentsRepository.getInstance(dataSource)
+    @FeatureScope
+    fun provideStoriesRemoteDataSource(service: DesignerNewsService): StoriesRemoteDataSource {
+        return StoriesRemoteDataSource.getInstance(service)
+    }
 }

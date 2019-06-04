@@ -23,6 +23,8 @@ apply plugin: 'kotlin-kapt'
 apply from: '../core_dependencies.gradle'
 apply from: '../test_dependencies.gradle'
 
+apply from: '../repositories.gradle'
+
 android {
     compileSdkVersion versions.compileSdk
 
@@ -31,7 +33,7 @@ android {
         minSdkVersion versions.minSdk
         targetSdkVersion versions.targetSdk
         versionCode rootProject.gitCommitCount
-        versionName = '1.0.7'
+        versionName = '1.1.0'
         archivesBaseName = 'plaid'
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
@@ -67,13 +69,6 @@ android {
     }
 
     dynamicFeatures = [':about', ':designernews', ':dribbble', ':search']
-}
-
-repositories {
-    google()
-    maven { url 'https://maven.fabric.io/public' }
-    jcenter()
-    maven { url 'http://dl.bintray.com/kotlin/kotlin-eap' }
 }
 
 dependencies {

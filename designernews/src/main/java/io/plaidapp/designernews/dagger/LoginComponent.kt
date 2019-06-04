@@ -18,16 +18,27 @@ package io.plaidapp.designernews.dagger
 
 import dagger.Component
 import io.plaidapp.core.dagger.BaseActivityComponent
+import io.plaidapp.core.dagger.CoreComponent
 import io.plaidapp.core.dagger.SharedPreferencesModule
+import io.plaidapp.core.dagger.designernews.DesignerNewsDataModule
+import io.plaidapp.core.dagger.scope.FeatureScope
 import io.plaidapp.designernews.ui.login.LoginActivity
 
 /**
  * Dagger component for [LoginActivity].
  */
-@Component(modules = [LoginModule::class])
+@Component(
+    modules = [
+        DesignerNewsDataModule::class,
+        SharedPreferencesModule::class
+    ],
+    dependencies = [CoreComponent::class]
+)
+@FeatureScope
 interface LoginComponent : BaseActivityComponent<LoginActivity> {
 
     interface Builder {
+        fun coreComponent(component: CoreComponent): Builder
         fun sharedPreferencesModule(module: SharedPreferencesModule): Builder
         fun build(): LoginComponent
     }
